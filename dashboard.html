@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyNotes - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: 'var(--color-primary-50)',
+                            100: 'var(--color-primary-100)',
+                            400: 'var(--color-primary-400)',
+                            500: 'var(--color-primary-500)',
+                            600: 'var(--color-primary-600)',
+                            700: 'var(--color-primary-700)',
+                        }
+                    }
+                }
+            }
+        }
+
+        const colorPalettes = {
+            red: { 50: '#fef2f2', 100: '#fee2e2', 400: '#f87171', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c' },
+            blue: { 50: '#eff6ff', 100: '#dbeafe', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+            purple: { 50: '#faf5ff', 100: '#f3e8ff', 400: '#c084fc', 500: '#a855f7', 600: '#9333ea', 700: '#7e22ce' },
+            yellow: { 50: '#fefce8', 100: '#fef9c3', 400: '#facc15', 500: '#eab308', 600: '#ca8a04', 700: '#a16207' },
+            green: { 50: '#f0fdf4', 100: '#dcfce7', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d' },
+            turquoise: { 50: '#f0fdfa', 100: '#ccfbf1', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e' },
+            gray: { 50: '#f4f4f5', 100: '#e4e4e7', 400: '#a1a1aa', 500: '#71717a', 600: '#27272a', 700: '#000000' },
+            pink: { 50: '#fdf2f8', 100: '#fce7f3', 400: '#f472b6', 500: '#ec4899', 600: '#db2777', 700: '#be185d' }
+        };
+
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        function applyColor(colorKey) {
+            const palette = colorPalettes[colorKey] || colorPalettes.blue;
+            document.documentElement.style.setProperty('--color-primary-50', palette[50]);
+            document.documentElement.style.setProperty('--color-primary-100', palette[100]);
+            document.documentElement.style.setProperty('--color-primary-400', palette[400]);
+            document.documentElement.style.setProperty('--color-primary-500', palette[500]);
+            document.documentElement.style.setProperty('--color-primary-600', palette[600]);
+            document.documentElement.style.setProperty('--color-primary-700', palette[700]);
+            localStorage.setItem('accentColor', colorKey);
+        }
+
+        applyColor(localStorage.getItem('accentColor') || 'blue');
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .content-section { display: none; }
+        .content-section.active { display: flex; flex-direction: column; }
+        
+        .nav-link.active { background-color: var(--color-primary-50); color: var(--color-primary-600); font-weight: 600; }
+        .dark .nav-link.active { background-color: #18181b; color: var(--color-primary-400); }
+        .nav-link.active i { color: var(--color-primary-600); }
+        .dark .nav-link.active i { color: var(--color-primary-400); }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-black flex h-screen overflow-hidden transition-colors duration-300">
+
+    <div id="mobileOverlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-30 hidden md:hidden"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-100 dark:bg-black border-r border-slate-200 dark:border-zinc-800 flex flex-col transform -translate-x-full transition-transform duration-300 ease-in-out md:relative md:translate-x-0">
+        <div class="p-6 flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-primary-600 dark:text-primary-400 tracking-tight">MyNotes</h2>
+            <button onclick="toggleMobileMenu()" class="md:hidden text-slate-500 dark:text-zinc-400">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        
+        <nav class="flex-1 px-4 space-y-2">
+            <button onclick="showSection('section-notes', this)" class="nav-link active w-full flex items-center space-x-3 text-slate-600 dark:text-zinc-300 px-4 py-2.5 rounded-lg transition hover:bg-slate-200/60 dark:hover:bg-zinc-900/50">
+                <i data-lucide="file-text" class="w-5 h-5 text-slate-400 dark:text-zinc-500 transition"></i>
+                <span>Todas las notas</span>
+            </button>
+            <button onclick="showSection('section-favs', this)" class="nav-link w-full flex items-center space-x-3 text-slate-600 dark:text-zinc-300 px-4 py-2.5 rounded-lg transition hover:bg-slate-200/60 dark:hover:bg-zinc-900/50">
+                <i data-lucide="star" class="w-5 h-5 text-slate-400 dark:text-zinc-500 transition"></i>
+                <span>Favoritos</span>
+            </button>
+            <button onclick="showSection('section-trash', this)" class="nav-link w-full flex items-center space-x-3 text-slate-600 dark:text-zinc-300 px-4 py-2.5 rounded-lg transition hover:bg-slate-200/60 dark:hover:bg-zinc-900/50">
+                <i data-lucide="trash-2" class="w-5 h-5 text-slate-400 dark:text-zinc-500 transition"></i>
+                <span>Papelera</span>
+            </button>
+            <div class="pt-4 mt-4 border-t border-slate-200 dark:border-zinc-800">
+                <button onclick="showSection('section-profile', this)" class="nav-link w-full flex items-center space-x-3 text-slate-600 dark:text-zinc-300 px-4 py-2.5 rounded-lg transition hover:bg-slate-200/60 dark:hover:bg-zinc-900/50">
+                    <i data-lucide="user" class="w-5 h-5 text-slate-400 dark:text-zinc-500 transition"></i>
+                    <span>Mi Perfil</span>
+                </button>
+                
+                <button onclick="showSection('section-themes', this); renderColorOptions();" class="nav-link w-full flex items-center space-x-3 text-slate-600 dark:text-zinc-300 px-4 py-2.5 rounded-lg transition hover:bg-slate-200/60 dark:hover:bg-zinc-900/50">
+                    <i data-lucide="palette" class="w-5 h-5 text-slate-400 dark:text-zinc-500 transition"></i>
+                    <span>Temas</span>
+                </button>
+            </div>
+        </nav>
+
+        <div class="p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-200/30 dark:bg-black">
+            <div class="flex items-center space-x-3 p-2">
+                <div id="userInitials" class="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm">--</div>
+                <div class="flex flex-col">
+                    <span id="userNameSidebar" class="text-xs font-bold text-slate-700 dark:text-zinc-200">Cargando...</span>
+                    <button onclick="logout()" class="text-[10px] text-red-400 dark:text-red-500 text-left hover:underline">Cerrar sesión</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        <section id="section-notes" class="content-section active h-full">
+            <header class="h-16 bg-white dark:bg-black border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 transition-colors">
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleMobileMenu()" class="md:hidden mr-3 text-slate-500 dark:text-zinc-400">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <i data-lucide="file-text" class="w-6 h-6 text-slate-400 dark:text-zinc-500"></i>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Notas</h1>
+                </div>
+                <button onclick="openModal()" class="bg-primary-600 text-white px-4 py-2 sm:px-5 rounded-lg text-sm font-semibold hover:bg-primary-700 transition shadow-lg shadow-primary-100 dark:shadow-none flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">Nueva</span>
+                </button>
+            </header>
+            <div id="container-notes" class="flex-1 overflow-y-auto p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 content-start"></div>
+        </section>
+
+        <section id="section-favs" class="content-section h-full">
+            <header class="h-16 bg-white dark:bg-black border-b border-slate-200 dark:border-zinc-800 flex items-center px-4 sm:px-8 flex-shrink-0 transition-colors">
+                <button onclick="toggleMobileMenu()" class="md:hidden mr-3 text-slate-500 dark:text-zinc-400">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="star" class="w-6 h-6 text-slate-400 dark:text-zinc-500"></i>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Favoritos</h1>
+                </div>
+            </header>
+            <div id="container-favs" class="flex-1 overflow-y-auto p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 content-start"></div>
+        </section>
+
+        <section id="section-trash" class="content-section h-full">
+            <header class="h-16 bg-white dark:bg-black border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 transition-colors">
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleMobileMenu()" class="md:hidden mr-3 text-slate-500 dark:text-zinc-400">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <i data-lucide="trash-2" class="w-6 h-6 text-slate-400 dark:text-zinc-500"></i>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Papelera</h1>
+                </div>
+            </header>
+            <div id="container-trash" class="flex-1 overflow-y-auto p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 content-start"></div>
+        </section>
+
+        <section id="section-profile" class="content-section h-full bg-white dark:bg-black transition-colors">
+            <header class="h-16 border-b border-slate-200 dark:border-zinc-800 flex items-center px-4 sm:px-8 flex-shrink-0">
+                <button onclick="toggleMobileMenu()" class="md:hidden mr-3 text-slate-500 dark:text-zinc-400">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="user" class="w-6 h-6 text-primary-600 dark:text-primary-400"></i>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Mi Perfil</h1>
+                </div>
+            </header>
+            <div class="flex-1 overflow-y-auto p-4 sm:p-8">
+                <div class="max-w-2xl">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase mb-2">Nombre</label>
+                            <input type="text" id="profileNombre" disabled class="w-full border border-slate-200 dark:border-zinc-800 rounded-lg px-4 py-2 bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase mb-2">Email</label>
+                            <input type="email" id="profileEmail" disabled class="w-full border border-slate-200 dark:border-zinc-800 rounded-lg px-4 py-2 bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-zinc-200">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-themes" class="content-section h-full bg-slate-50 dark:bg-black transition-colors">
+            <header class="h-16 bg-white dark:bg-black border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 transition-colors">
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleMobileMenu()" class="md:hidden mr-3 text-slate-500 dark:text-zinc-400">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <i data-lucide="palette" class="w-6 h-6 text-primary-600 dark:text-primary-400"></i>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Apariencia y Temas</h1>
+                </div>
+            </header>
+            <div class="flex-1 overflow-y-auto p-4 sm:p-8">
+                <div class="max-w-3xl mx-auto space-y-8 w-full">
+                    
+                    <div class="bg-white dark:bg-zinc-900/40 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-800 dark:text-white mb-6">Modo de visualización</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button onclick="setMode('light')" id="btnLightMode" class="py-4 border rounded-xl font-medium transition flex items-center justify-center gap-3 hover:scale-[1.02]">
+                                <i data-lucide="sun" class="w-5 h-5"></i> Modo Claro
+                            </button>
+                            <button onclick="setMode('dark')" id="btnDarkMode" class="py-4 border rounded-xl font-medium transition flex items-center justify-center gap-3 hover:scale-[1.02]">
+                                <i data-lucide="moon" class="w-5 h-5"></i> Modo Oscuro
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-zinc-900/40 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-800 dark:text-white mb-6">Color de Acento</h2>
+                        <div id="color-options" class="grid grid-cols-4 sm:grid-cols-8 gap-4 justify-items-center">
+                            </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="noteModal" class="hidden fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-black rounded-2xl p-6 w-full max-w-md shadow-2xl border border-transparent dark:border-zinc-800 transition-colors">
+            <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Nueva Nota</h2>
+            <form id="noteForm" class="space-y-4">
+                <input type="text" id="noteTitulo" placeholder="Título" required class="w-full px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none">
+                <textarea id="noteContenido" placeholder="Escribe algo..." rows="4" required class="w-full px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"></textarea>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 rounded-lg transition">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">Guardar Nota</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    const API_URL = 'http://localhost:3000';
+    let todasLasNotas = [];
+    let editandoId = null;
+
+    // --- LÓGICA DE TEMAS Y APARIENCIA ---
+    function setMode(mode) {
+        if(mode === 'dark') {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+        renderThemeSectionUI();
+    }
+
+    function renderColorOptions() {
+        const container = document.getElementById('color-options');
+        if(!container) return;
+        container.innerHTML = '';
+        
+        const currentColor = localStorage.getItem('accentColor') || 'blue';
+        const colorClasses = {
+            red: 'bg-red-500', blue: 'bg-blue-500', purple: 'bg-purple-500', 
+            yellow: 'bg-yellow-500', green: 'bg-green-500', turquoise: 'bg-teal-500', 
+            gray: 'bg-zinc-800 border border-slate-400', pink: 'bg-pink-500'
+        };
+
+        Object.keys(colorPalettes).forEach(key => {
+            const isSelected = currentColor === key;
+            const btn = document.createElement('button');
+            
+            btn.onclick = () => { applyColor(key); renderColorOptions(); renderThemeSectionUI(); };
+            
+            let classes = `w-12 h-12 rounded-full ${colorClasses[key]} transition transform hover:scale-110 flex items-center justify-center shadow-md`;
+            if (isSelected) classes += ` ring-4 ring-offset-2 ring-offset-white dark:ring-offset-black ring-primary-500`;
+            btn.className = classes;
+            
+            if (isSelected) btn.innerHTML = `<i data-lucide="check" class="w-6 h-6 text-white"></i>`;
+            
+            container.appendChild(btn);
+        });
+        lucide.createIcons();
+    }
+
+    function renderThemeSectionUI() {
+        const isDark = document.documentElement.classList.contains('dark');
+        const btnLight = document.getElementById('btnLightMode');
+        const btnDark = document.getElementById('btnDarkMode');
+        
+        if(!btnLight || !btnDark) return;
+
+        // Clases base para ambos botones
+        const baseClasses = "py-4 border rounded-xl font-medium transition flex items-center justify-center gap-3 w-full hover:scale-[1.02]";
+        btnLight.className = baseClasses;
+        btnDark.className = baseClasses;
+
+        // Estilos para el botón activo (Fondo claro tintado con texto/borde de acento)
+        const selectedClasses = ["border-primary-500", "bg-primary-50", "dark:bg-primary-50", "text-primary-600", "dark:text-primary-600", "shadow-sm"];
+        // Estilos para el botón inactivo (Discreto)
+        const unselectedClasses = ["border-slate-200", "dark:border-zinc-800", "text-slate-600", "dark:text-zinc-400", "hover:bg-slate-50", "dark:hover:bg-zinc-800/50"];
+
+        if (isDark) {
+            btnLight.classList.add(...unselectedClasses);
+            btnDark.classList.add(...selectedClasses);
+        } else {
+            btnLight.classList.add(...selectedClasses);
+            btnDark.classList.add(...unselectedClasses);
+        }
+    }
+
+
+    // --- NAVEGACIÓN Y RESTO DEL CÓDIGO ---
+    function toggleMobileMenu() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+    }
+
+    function showSection(sectionId, element) {
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+        if(element) element.classList.add('active');
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        if (!sidebar.classList.contains('-translate-x-full')) {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        }
+
+        if(sectionId === 'section-themes') renderThemeSectionUI();
+    }
+
+    function openModal(id = null, titulo = '', contenido = '') {
+        editandoId = id; 
+        document.getElementById('noteModal').classList.remove('hidden');
+        document.getElementById('noteTitulo').value = titulo;
+        document.getElementById('noteContenido').value = contenido;
+        document.querySelector('#noteModal h2').textContent = id ? 'Editar Nota' : 'Nueva Nota';
+    }
+
+    function closeModal() {
+        document.getElementById('noteModal').classList.add('hidden');
+        document.getElementById('noteForm').reset();
+        editandoId = null;
+    }
+
+    async function cargarDatosIniciales() {
+        try {
+            const res = await fetch(`${API_URL}/perfil`, { credentials: 'include' });
+            if (!res.ok) throw new Error();
+            const user = await res.json();
+            document.getElementById('userNameSidebar').textContent = user.nombre;
+            document.getElementById('userInitials').textContent = user.nombre.substring(0,2).toUpperCase();
+            document.getElementById('profileNombre').value = user.nombre;
+            document.getElementById('profileEmail').value = user.email;
+            await obtenerNotas();
+        } catch (err) { window.location.href = 'index.html'; }
+    }
+
+    async function obtenerNotas() {
+        const res = await fetch(`${API_URL}/notas`, { credentials: 'include' });
+        todasLasNotas = await res.json();
+        renderizarNotas();
+    }
+
+    function renderizarNotas() {
+        const containers = {
+            notes: document.getElementById('container-notes'),
+            favs: document.getElementById('container-favs'),
+            trash: document.getElementById('container-trash')
+        };
+        Object.values(containers).forEach(c => c.innerHTML = '');
+
+        let notasTotales = 0;
+        let favoritosTotales = 0;
+        let papeleraTotales = 0;
+
+        todasLasNotas.forEach(n => {
+            const card = document.createElement('div');
+            card.className = "bg-white dark:bg-black p-6 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition group h-fit";
+            
+            const tituloEscapado = n.titulo.replace(/'/g, "\\'").replace(/\n/g, " ");
+            const notaEscapada = n.nota.replace(/'/g, "\\'").replace(/\n/g, " ");
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-bold text-slate-800 dark:text-white">${n.titulo}</h3>
+                    ${!n.papelera ? `
+                        <button onclick="toggleAction(${n.id}, 'favorito', ${n.favorito ? 0 : 1})" class="text-slate-400 dark:text-zinc-500 hover:text-yellow-500 dark:hover:text-yellow-500 transition">
+                            <i data-lucide="star" class="w-5 h-5 ${n.favorito ? 'text-yellow-500 fill-yellow-500' : ''}"></i>
+                        </button>` : ''}
+                </div>
+                <p class="text-slate-500 dark:text-zinc-400 text-sm mb-4 whitespace-pre-wrap">${n.nota}</p>
+                <div class="flex gap-4 border-t border-slate-100 dark:border-zinc-800 pt-4">
+                    ${n.papelera ? `
+                        <button onclick="eliminarPermanente(${n.id})" class="flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 uppercase transition">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Eliminar
+                        </button>
+                        <button onclick="toggleAction(${n.id}, 'papelera', 0)" class="flex items-center gap-1 text-xs font-bold text-primary-500 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 uppercase transition">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Restaurar
+                        </button>
+                    ` : `
+                        <button onclick="openModal(${n.id}, '${tituloEscapado}', '${notaEscapada}')" class="flex items-center gap-1 text-xs font-bold text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 uppercase transition">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Editar
+                        </button>
+                        <button onclick="toggleAction(${n.id}, 'papelera', 1)" class="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400 uppercase transition">
+                            <i data-lucide="trash" class="w-3.5 h-3.5"></i> Papelera
+                        </button>
+                    `}
+                </div>
+            `;
+
+            if (n.papelera) {
+                containers.trash.appendChild(card);
+                papeleraTotales++;
+            } else {
+                containers.notes.appendChild(card);
+                notasTotales++;
+                if (n.favorito) {
+                    containers.favs.appendChild(card.cloneNode(true));
+                    favoritosTotales++;
+                }
+            }
+        });
+
+        if (notasTotales === 0) {
+            containers.notes.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-20 text-center">
+                    <div class="bg-slate-100 dark:bg-zinc-900 p-4 rounded-full mb-4">
+                        <i data-lucide="file-plus" class="w-10 h-10 text-slate-400 dark:text-zinc-500"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-slate-700 dark:text-zinc-300">Aún no tienes notas</h3>
+                    <p class="text-sm text-slate-500 dark:text-zinc-500 mt-1 max-w-xs">Tus ideas, tareas y recordatorios aparecerán aquí una vez que los crees.</p>
+                </div>
+            `;
+        }
+
+        if (favoritosTotales === 0) {
+            containers.favs.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-20 text-center">
+                    <div class="bg-slate-100 dark:bg-zinc-900 p-4 rounded-full mb-4">
+                        <i data-lucide="star" class="w-10 h-10 text-slate-400 dark:text-zinc-500"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-slate-700 dark:text-zinc-300">Sin notas favoritas</h3>
+                    <p class="text-sm text-slate-500 dark:text-zinc-500 mt-1 max-w-xs">Haz clic en la estrella de cualquier nota para tenerla siempre a la mano.</p>
+                </div>
+            `;
+        }
+
+        if (papeleraTotales === 0) {
+            containers.trash.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-20 text-center">
+                    <div class="bg-slate-100 dark:bg-zinc-900 p-4 rounded-full mb-4">
+                        <i data-lucide="trash" class="w-10 h-10 text-slate-400 dark:text-zinc-500"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-slate-700 dark:text-zinc-300">Papelera vacía</h3>
+                    <p class="text-sm text-slate-500 dark:text-zinc-500 mt-1 max-w-xs">Las notas que elimines temporalmente se guardarán aquí.</p>
+                </div>
+            `;
+        }
+        
+        lucide.createIcons();
+    }
+
+    document.getElementById('noteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const titulo = document.getElementById('noteTitulo').value;
+        const nota = document.getElementById('noteContenido').value;
+
+        const url = editandoId ? `${API_URL}/notas/editar/${editandoId}` : `${API_URL}/notas`;
+        const method = editandoId ? 'PUT' : 'POST';
+
+        await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ titulo, nota })
+        });
+
+        closeModal();
+        obtenerNotas();
+    });
+
+    async function toggleAction(id, campo, valor) {
+        const n = todasLasNotas.find(x => x.id === id);
+        const body = { 
+            favorito: campo === 'favorito' ? valor : n.favorito, 
+            papelera: campo === 'papelera' ? valor : n.papelera 
+        };
+        await fetch(`${API_URL}/notas/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(body)
+        });
+        obtenerNotas();
+    }
+
+    async function eliminarPermanente(id) {
+        if (confirm('¿Borrar definitivamente?')) {
+            await fetch(`${API_URL}/notas/${id}`, { method: 'DELETE', credentials: 'include' });
+            obtenerNotas();
+        }
+    }
+
+    async function logout() {
+        await fetch(`${API_URL}/logout`, { credentials: 'include' });
+        window.location.href = 'index.html';
+    }
+
+    window.onload = () => {
+        cargarDatosIniciales();
+        lucide.createIcons();
+    };
+    </script>
+</body>
+</html>
