@@ -10,3 +10,7 @@ Aplicación web "MyNotes" enfocada a la gestion de notas simples, usando HTML, J
 - Rosales Soto Miguel Ángel
 
 ## ✍️ Proyecto final para la materia Aplicaciones Web
+
+Docente: Rios Martines Juan Pablo
+
+Este directorio NO cuenta con la carpeta "node_modules", crearla al descargar el proyecto.
